@@ -110,7 +110,20 @@ sudo_if_required() {
 }
 
 modify_permissions() {
-  local directories=("installer" "gatekeeper" "lightning" "bitcoin" "docker-compose.yaml" "$BITCOIN_DATAPATH" "$LIGHTNING_DATAPATH" "$PROXY_DATAPATH" "$GATEKEEPER_DATAPATH" "$OTSCLIENT_DATAPATH")
+  local directories=(
+    "installer"
+    "gatekeeper"
+    "lightning"
+    "bitcoin"
+    "docker-compose.yaml"
+    "$BITCOIN_DATAPATH"
+    "$LIGHTNING_DATAPATH"
+    "$PROXY_DATAPATH"
+    "$GATEKEEPER_DATAPATH"
+    "$OTSCLIENT_DATAPATH"
+    "$GRAFANA_DATAPATH"
+  )
+
   for d in "${directories[@]}"
   do
     if [[ -e $d ]]; then
@@ -122,7 +135,14 @@ modify_permissions() {
 }
 
 modify_owner() {
-  local directories=("$BITCOIN_DATAPATH" "$LIGHTNING_DATAPATH" "$PROXY_DATAPATH" "$GATEKEEPER_DATAPATH" "$OTSCLIENT_DATAPATH")
+  local directories=(
+    "$BITCOIN_DATAPATH"
+    "$LIGHTNING_DATAPATH"
+    "$PROXY_DATAPATH"
+    "$GATEKEEPER_DATAPATH"
+    "$OTSCLIENT_DATAPATH"
+    "$GRAFANA_DATAPATH"
+  )
   local user=$(id -u $RUN_AS_USER):$(id -g $RUN_AS_USER)
   for d in "${directories[@]}"
   do
@@ -192,6 +212,7 @@ configure() {
              -e PYCOIN_VERSION=$PYCOIN_VERSION \
              -e BITCOIN_VERSION=$BITCOIN_VERSION \
              -e LIGHTNING_VERSION=$LIGHTNING_VERSION \
+             -e GRAFANA_VERSION=$GRAFANA_VERSION \
              --log-driver=none$pw_env \
              --network none \
              --rm$interactive cyphernode/cyphernodeconf:$CONF_VERSION $user yo --no-insight cyphernode$gen_options $recreate
@@ -461,6 +482,39 @@ install_docker() {
     fi
   fi
 
+  if [[ $FEATURE_GRAFANA == true ]]; then
+    local directories=(
+      "$GRAFANA_DATAPATH"
+      "$GRAFANA_DATAPATH/grafana"
+      "$GRAFANA_DATAPATH/grafana/data"
+      "$GRAFANA_DATAPATH/grafana/dashboards"
+      "$GRAFANA_DATAPATH/influxdb"
+      "$GRAFANA_DATAPATH/influxdb/data"
+      "$GRAFANA_DATAPATH/telegraf"
+    )
+    for d in "${directories[@]}"
+    do
+      if [ ! -d $d ]; then
+        step "   [32mcreate[0m $d"
+        sudo_if_required mkdir -p $d
+        next
+      fi
+    done
+
+    copy_file installer/grafana/grafana.ini $GRAFANA_DATAPATH/grafana/grafana.ini 0 $SUDO_REQUIRED
+    copy_file installer/grafana/bitcoin.conf $GRAFANA_DATAPATH/grafana/bitcoin.conf 0 $SUDO_REQUIRED
+    copy_file installer/grafana/influxdb.conf $GRAFANA_DATAPATH/influxdb/influxdb.conf 0 $SUDO_REQUIRED
+    copy_file installer/grafana/telegraf.conf $GRAFANA_DATAPATH/telegraf/telegraf.conf 0 $SUDO_REQUIRED
+
+    copy_file installer/grafana/dashboards/general.json $GRAFANA_DATAPATH/grafana/dashboards/general.json 0 $SUDO_REQUIRED
+    copy_file installer/grafana/dashboards/bitcoin.json $GRAFANA_DATAPATH/grafana/dashboards/bitcoin.json 0 $SUDO_REQUIRED
+
+    if [[ $FEATURE_LIGHTNING == true ]]; then
+      copy_file installer/grafana/dashboards/lightning.json $GRAFANA_DATAPATH/grafana/dashboards/lightning.json 0 $SUDO_REQUIRED
+    fi
+
+  fi
+
   docker swarm join-token worker > /dev/null 2>&1
   local noSwarm=$?;
 
@@ -571,9 +625,17 @@ sanity_checks() {
     RUN_AS_USER=$USER
   elif [[ $OS == 'Darwin' ]]; then
     echo "          Run as user option is not supported on OSX.[0m"
-    echo "          [33mPlease run start.sh later as the user you are running this setup utility under.[0m"
+    echo "          [33mPlease run start.sh later as the user you are[0m"
+    echo "          [33mrunning this setup utility under.[0m"
     RUN_AS_USER=$USER
   fi
+
+#  if [[ $FEATURE_GRAFANA == true && $OS == 'Darwin' ]]; then
+#    echo "          Grafana is not supported on OSX.[0m"
+#    echo "          [33mPlease reconfiguring without that feature.[0m"
+#    echo "          [31mExiting due to incompatible configuration. :([0m"
+#    exit
+#  fi
 
   local sudo=0
   local sudo_reason
@@ -648,6 +710,8 @@ OTSCLIENT_VERSION="v0.1-rc.2"
 PYCOIN_VERSION="v0.1-rc.2"
 BITCOIN_VERSION="v0.17.0"
 LIGHTNING_VERSION="v0.6.2"
+GRAFANA_VERSION="v0.1-rc.1"
+
 
 # trap ctrl-c and call ctrl_c()
 trap ctrl_c INT

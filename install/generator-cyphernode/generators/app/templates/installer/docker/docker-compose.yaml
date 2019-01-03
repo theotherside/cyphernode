@@ -5,6 +5,9 @@ services:
     # HTTP authentication API gate
     environment:
       - "TRACING=1"
+<% if (features.indexOf('grafana') !== -1) { %>
+      - "FEATURE_GRAFANA=true"
+<% } %>
     image: cyphernode/gatekeeper:<%= gatekeeper_version %>
     ports:
       - "443:443"
@@ -47,6 +50,9 @@ services:
       - "WATCHER_BTC_NODE_PRUNED=<%= bitcoin_prune?'true':'false' %>"
       - "OTSCLIENT_CONTAINER=otsclient:6666"
       - "OTS_FILES=/proxy/otsfiles"
+<% if (features.indexOf('grafana') !== -1) { %>
+      - "FEATURE_GRAFANA=true"
+<% } %>
     image: cyphernode/proxy:<%= proxy_version %>
 <% if ( devmode ) { %>
     ports:
@@ -71,6 +77,9 @@ services:
     environment:
       - "TX_CONF_URL=proxy:8888/executecallbacks"
       - "OTS_URL=proxy:8888/ots_backoffice"
+<% if (features.indexOf('grafana') !== -1) { %>
+      - "FEATURE_GRAFANA=true"
+<% } %>
     image: cyphernode/proxycron:<%= proxycron_version %>
 #    deploy:
 #      placement:
@@ -119,6 +128,9 @@ services:
     environment:
       - "TRACING=1"
       - "OTSCLIENT_LISTENING_PORT=6666"
+<% if (features.indexOf('grafana') !== -1) { %>
+      - "FEATURE_GRAFANA=true"
+<% } %>
     image: cyphernode/otsclient:<%= otsclient_version %>
 #    deploy:
 #      placement:
@@ -128,6 +140,36 @@ services:
     command: $USER /script/startotsclient.sh
     networks:
       - cyphernodenet
+    restart: always
+<% } %>
+
+<% if ( features.indexOf('grafana') !== -1 ) { %>
+  grafana:
+    image: cyphernode/grafana:<%= grafana_version %>
+    #    deploy:
+    #      placement:
+    #        constraints: [node.hostname==dev]
+    volumes:
+
+    - "<%= grafana_datapath%>/grafana/grafana.ini:/etc/grafana/grafana.ini"
+    - "<%= grafana_datapath%>/grafana/data:/var/lib/grafana"
+    - "<%= grafana_datapath%>/grafana/dashboards:/usr/share/grafana/dashboards"
+    - "<%= grafana_datapath%>/influxdb/influxdb.conf:/etc/influxdb/influxdb.conf"
+    - "<%= grafana_datapath%>/influxdb/data:/var/lib/influxdb"
+    - "<%= grafana_datapath%>/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf"
+    - "/var/run/docker.sock:/var/run/docker.sock"
+    - "<%= grafana_datapath%>/grafana/bitcoin.conf:/root/.bitcoin/bitcoin.conf"
+<% if ( features.indexOf('lightning') !== -1 && lightning_implementation === 'c-lightning' ) { %>
+    - "<%= lightning_datapath%>:/root/.lightning"
+<% } %>
+    environment:
+    - "GF_AUTH_DISABLE_LOGIN_FORM=true"
+    - "GF_AUTH_DISABLE_SIGNOUT_MENU=true"
+    - "GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s:%(http_port)s/monitoring/"
+    - "GF_AUTH_PROXY_ENABLED=true"
+    - "GF_AUTH_BASIC_ENABLED=false"
+    networks:
+    - cyphernodenet
     restart: always
 <% } %>
 

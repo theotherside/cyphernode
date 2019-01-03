@@ -334,7 +334,8 @@ module.exports = class extends Generator {
       'proxy_datapath',
       'bitcoin_datapath',
       'lightning_datapath',
-      'otsclient_datapath'
+      'otsclient_datapath',
+      'grafana_datapath'
     ];
 
     for( let pathProp of pathProps ) {
@@ -424,7 +425,8 @@ module.exports = class extends Generator {
       pycoin_version: process.env.PYCOIN_VERSION || 'latest',
       otsclient_version: process.env.OTSCLIENT_VERSION || 'latest',
       bitcoin_version: process.env.BITCOIN_VERSION || 'latest',
-      lightning_version: process.env.LIGHTNING_VERSION || 'latest'
+      lightning_version: process.env.LIGHTNING_VERSION || 'latest',
+      grafana_version: process.env.GRAFANA_VERSION || 'latest'
     }, this.props );
   }
 

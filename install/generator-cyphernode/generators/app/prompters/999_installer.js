@@ -3,6 +3,15 @@ const chalk = require('chalk');
 
 const name = 'installer';
 
+const grafana_templates = [
+  path.join('grafana', 'grafana.ini' ),
+  path.join('grafana', 'influxdb.conf' ),
+  path.join('grafana', 'telegraf.conf' ),
+  path.join('grafana', 'bitcoin.conf' ),
+  path.join('grafana', 'dashboards', 'general.json' ),
+  path.join('grafana', 'dashboards', 'bitcoin.json' )
+]
+
 const capitalise = function( txt ) {
   return txt.charAt(0).toUpperCase() + txt.substr(1);
 };
@@ -198,7 +207,41 @@ module.exports = {
       default: utils._getDefault( 'otsclient_datapath_custom' ),
       filter: utils._trimFilter,
       validate: utils._pathValidator,
-      message: prefix()+'Where is your otsclient data?'+utils._getHelp('otsclient_datapath_custom'),
+      message: prefix()+'Custom path for your otsclient data?'+utils._getHelp('otsclient_datapath_custom'),
+    },
+    {
+      when: function(props) { return installerDocker(props) && props.features.indexOf('grafana') !== -1 },
+      type: 'list',
+      name: 'grafana_datapath',
+      default: utils._getDefault( 'grafana_datapath' ),
+      choices: [
+        {
+          name: "/var/run/cyphernode/grafana (needs sudo)",
+          value: "/var/run/cyphernode/grafana"
+        },
+        {
+          name: "~/.cyphernode/grafana",
+          value: "~/.cyphernode/grafana"
+        },
+        {
+          name: "~/grafana",
+          value: "~/grafana"
+        },
+        {
+          name: "Custom path",
+          value: "_custom"
+        }
+      ],
+      message: prefix()+'Where do you want to store your grafana data?'+utils._getHelp('grafana_datapath'),
+    },
+    {
+      when: function(props) { return installerDocker(props) && props.features.indexOf('grafana') !== -1 && props.grafana_datapath === '_custom' },
+      type: 'input',
+      name: 'grafana_datapath_custom',
+      default: utils._getDefault( 'grafana_datapath_custom' ),
+      filter: utils._trimFilter,
+      validate: utils._pathValidator,
+      message: prefix()+'Custom path for your grafana data?'+utils._getHelp('grafana_datapath_custom'),
     },
     {
       when: function(props) { return installerDocker(props) && props.bitcoin_mode === 'internal' },
@@ -237,9 +280,21 @@ module.exports = {
     }];
   },
   templates: function( props ) {
+    let templates = [];
     if( props.installer_mode === 'docker' ) {
-      return ['config.sh','start.sh', 'stop.sh', 'testfeatures.sh', path.join('docker', 'docker-compose.yaml')];
+      templates = ['config.sh','start.sh', 'stop.sh', 'testfeatures.sh', path.join('docker', 'docker-compose.yaml')];
+    } else {
+      templates = ['config.sh','start.sh', 'stop.sh', 'testfeatures.sh'];
     }
-    return ['config.sh','start.sh', 'stop.sh', 'testfeatures.sh'];
+
+    if( installerDocker(props) && props.features.indexOf('grafana') !== -1 ) {
+      templates = templates.concat(grafana_templates);
+    }
+
+    if( installerDocker(props) && props.features.indexOf('grafana') !== -1 && props.features.indexOf('lightning') !== -1 ) {
+      templates = templates.concat(path.join('grafana', 'dashboards', 'lightning.json' ));
+    }
+
+    return templates;
   }
 };
