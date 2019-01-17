@@ -213,6 +213,7 @@ module.exports = class extends Generator {
       delete this.props.otsclient_version;
       delete this.props.bitcoin_version;
       delete this.props.lightning_version;
+      delete this.props.sparkwallet_version;
       delete this.props.grafana_version;
     }
     
@@ -338,6 +339,7 @@ module.exports = class extends Generator {
       'proxy_datapath',
       'bitcoin_datapath',
       'lightning_datapath',
+      'sparkwallet_datapath',
       'otsclient_datapath'
     ];
 
@@ -419,6 +421,7 @@ module.exports = class extends Generator {
       lightning_datapath: '',
       lightning_nodename: name.generate(),
       lightning_nodecolor: '',
+      sparkwallet_datapath: '',
       otsclient_datapath: '',
       installer_cleanup: false,
       default_username: process.env.DEFAULT_USER || '',
@@ -428,7 +431,8 @@ module.exports = class extends Generator {
       pycoin_version: process.env.PYCOIN_VERSION || 'latest',
       otsclient_version: process.env.OTSCLIENT_VERSION || 'latest',
       bitcoin_version: process.env.BITCOIN_VERSION || 'latest',
-      lightning_version: process.env.LIGHTNING_VERSION || 'latest'
+      lightning_version: process.env.LIGHTNING_VERSION || 'latest',
+      sparkwallet_version: process.env.SPARKWALLET_VERSION || 'standalone'
     }, this.props );
   }
 
