@@ -23,6 +23,7 @@ const defaultAPIProperties = `
 # Watcher can:
 action_watch=watcher
 action_unwatch=watcher
+action_watchtxid=watcher
 action_getactivewatches=watcher
 action_getbestblockhash=watcher
 action_getbestblockinfo=watcher
@@ -47,12 +48,14 @@ action_ots_stamp=spender
 action_ots_getfile=spender
 action_ln_getinvoice=spender
 action_ln_decodebolt11=spender
+action_ln_connectfund=spender
 
 # Admin can do what the spender can do, plus:
 
 
 # Should be called from inside the Docker network only:
 action_conf=internal
+action_newblock=internal
 action_executecallbacks=internal
 action_ots_backoffice=internal
 `;
