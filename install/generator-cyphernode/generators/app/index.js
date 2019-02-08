@@ -23,6 +23,7 @@ const defaultAPIProperties = `
 # Watcher can:
 action_watch=watcher
 action_unwatch=watcher
+action_watchxpub=watcher
 action_getactivewatches=watcher
 action_getbestblockhash=watcher
 action_getbestblockinfo=watcher
@@ -213,7 +214,7 @@ module.exports = class extends Generator {
       delete this.props.lightning_version;
       delete this.props.grafana_version;
     }
-    
+
     this._assignConfigDefaults();
     for( let c of this.featureChoices ) {
       c.checked = this._isChecked( 'features', c.value );
